@@ -689,19 +689,46 @@
                 }));
 
                 // 計算距離並篩選 5 公里範圍
-                nearbyCarparks = nearbyCarparks.filter(cp => {
+                nearbyCarparks = await Promise.all(nearbyCarparks.filter(async cp => {
                     const distance = calculateDistance(lat, lng, cp.latitude, cp.longitude);
                     cp.distance = distance.toFixed(1);
-                    return distance <= 5;
-                });
+                    
+                    if (distance <= 5) {
+                        // 搜尋該停車場 5 公里範圍內的建築物
+                        try {
+                            const response = await fetch(`https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${cp.latitude},${cp.longitude}&radius=5000&type=establishment&key=AIzaSyAB4Jn4cerY161yAuUskCBL7nq4LoX42Mw`);
+                            const data = await response.json();
+                            
+                            cp.nearbyBuildings = data.results
+                                .filter(place => {
+                                    // 篩選建築物類型
+                                    const types = place.types;
+                                    return types.some(type => 
+                                        ['shopping_mall', 'apartment', 'lodging', 'residential'].includes(type)
+                                    );
+                                })
+                                .map(place => ({
+                                    name: place.name,
+                                    type: getPlaceType(place.types),
+                                    distance: calculateDistance(
+                                        cp.latitude,
+                                        cp.longitude,
+                                        place.geometry.location.lat,
+                                        place.geometry.location.lng
+                                    ).toFixed(1)
+                                }))
+                                .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+                        } catch (error) {
+                            console.error('獲取附近建築物錯誤：', error);
+                            cp.nearbyBuildings = [];
+                        }
+                        return true;
+                    }
+                    return false;
+                }));
 
                 // 按距離排序
                 nearbyCarparks.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
-                // 為每個停車場獲取附近建築物
-                for (let cp of nearbyCarparks) {
-                    cp.nearbyBuildings = await getNearbyBuildings(cp.latitude, cp.longitude);
-                }
 
                 // 顯示結果
                 displayResults(nearbyCarparks);
@@ -711,66 +738,23 @@
             }
         }
 
-        // 獲取附近建築物的函數
-        async function getNearbyBuildings(lat, lng) {
-            const service = new google.maps.places.PlacesService(map);
-            const types = ['shopping_mall', 'apartment_complex', 'residential', 'hotel'];
-            const buildings = [];
-
-            for (const type of types) {
-                const request = {
-                    location: new google.maps.LatLng(lat, lng),
-                    radius: 5000, // 5公里
-                    type: type
-                };
-
-                try {
-                    const results = await new Promise((resolve, reject) => {
-                        service.nearbySearch(request, (results, status) => {
-                            if (status === google.maps.places.PlacesServiceStatus.OK) {
-                                resolve(results);
-                            } else {
-                                resolve([]);
-                            }
-                        });
-                    });
-
-                    // 處理結果
-                    results.forEach(place => {
-                        const distance = calculateDistance(
-                            lat, 
-                            lng, 
-                            place.geometry.location.lat(), 
-                            place.geometry.location.lng()
-                        );
-
-                        buildings.push({
-                            name: place.name,
-                            type: getTypeInChinese(type),
-                            distance: distance.toFixed(1)
-                        });
-                    });
-                } catch (error) {
-                    console.error('獲取建築物錯誤：', error);
-                }
-            }
-
-            // 按距離排序
-            return buildings.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-        }
-
-        // 轉換建築物類型為中文
-        function getTypeInChinese(type) {
+        // 添加建築物類型轉換函數
+        function getPlaceType(types) {
             const typeMap = {
                 'shopping_mall': '商場',
-                'apartment_complex': '住宅',
-                'residential': '屋苑',
-                'hotel': '酒店'
+                'apartment': '住宅',
+                'lodging': '酒店',
+                'residential': '屋苑'
             };
-            return typeMap[type] || type;
+            
+            for (const type of types) {
+                if (typeMap[type]) {
+                    return typeMap[type];
+                }
+            }
+            return '其他';
         }
 
-        // 修改顯示結果的表格
         function displayResults(nearbyCarparks) {
             const results = document.getElementById('results');
             if (nearbyCarparks.length === 0) {
@@ -796,7 +780,7 @@
                                 <th>充電類型</th>
                                 <th>泊車位</th>
                                 <th>收費</th>
-                                <th>附近建築物 (5公里內)</th>
+                                <th>附近建築物</th>
                             </tr>
                         </thead>
                         <tbody>
