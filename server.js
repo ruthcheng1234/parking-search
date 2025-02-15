@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const retry = require('async-retry');
 const winston = require('winston');
+const fs = require('fs').promises;
 
 const app = express();
 
@@ -46,6 +47,41 @@ const logger = winston.createLogger({
         new winston.transports.File({ filename: 'combined.log' })
     ]
 });
+
+// 本地充電站數據
+const chargersData = [
+    {
+        location_name: "IFC商場",
+        address: "中環金融街8號",
+        latitude: 22.2849,
+        longitude: 114.1577,
+        parking_spaces: 1200,
+        chargers: [
+            {
+                operator_name: "Tesla",
+                connector_type: "Tesla Supercharger"
+            },
+            {
+                operator_name: "CLP",
+                connector_type: "CCS"
+            }
+        ]
+    },
+    {
+        location_name: "太古城中心",
+        address: "太古城道18號",
+        latitude: 22.2867,
+        longitude: 114.2180,
+        parking_spaces: 800,
+        chargers: [
+            {
+                operator_name: "CLP",
+                connector_type: "Type 2"
+            }
+        ]
+    }
+    // ... 可以添加更多充電站數據
+];
 
 // 計算兩點之間的距離（公里）
 function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -376,59 +412,101 @@ app.get('/api/nearby-buildings', async (req, res) => {
     }
 });
 
-// 修改充電站 API 以包含附近建築物
-app.get('/api/chargers', async (req, res) => {
+// 爬取 Kilowatt 充電站數據
+async function scrapeKilowattData() {
     try {
-        const [chargersResponse, buildingsResponse] = await Promise.all([
-            axios.get('https://www.kilowatt.hk/api/v1/chargers', {
-                headers: {
-                    'Accept': 'application/json',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                }
-            }),
-            axios.get('https://api.map.gov.hk/building/list', {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            })
-        ]);
-
-        const chargers = chargersResponse.data;
-        const buildings = buildingsResponse.data;
-
-        // 為每個充電站添加附近建築物信息
-        const enrichedChargers = chargers.map(charger => {
-            const nearbyBuildings = buildings.filter(building => {
-                const distance = calculateDistance(
-                    charger.latitude,
-                    charger.longitude,
-                    building.latitude,
-                    building.longitude
-                );
-                return distance <= 5; // 5公里範圍內
-            }).map(building => ({
-                name: building.name_tc || building.name,
-                type: building.type_tc || building.type,
-                distance: calculateDistance(
-                    charger.latitude,
-                    charger.longitude,
-                    building.latitude,
-                    building.longitude
-                ).toFixed(1)
-            })).sort((a, b) => a.distance - b.distance);
-
-            return {
-                ...charger,
-                nearbyBuildings
-            };
+        const response = await axios.get('https://www.kilowatt.hk/chargers', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                'Accept': 'text/html'
+            }
         });
 
-        res.json(enrichedChargers);
+        const $ = cheerio.load(response.data);
+        const chargers = [];
+
+        // 解析每個充電站
+        $('.charger-location').each((i, elem) => {
+            try {
+                // 基本信息
+                const location = $(elem).find('.location-name').text().trim();
+                const address = $(elem).find('.address').text().trim();
+                const district = $(elem).find('.district').text().trim();
+                
+                // 經緯度
+                const coordinates = $(elem).find('.coordinates').text().trim().split(',');
+                const latitude = parseFloat(coordinates[0]);
+                const longitude = parseFloat(coordinates[1]);
+
+                // 充電器信息
+                const chargingInfo = {
+                    count: $(elem).find('.charger-count').text().trim(),
+                    operators: [],
+                    types: []
+                };
+
+                // 解析充電器詳細信息
+                $(elem).find('.charger-details').each((_, detail) => {
+                    const operator = $(detail).find('.operator').text().trim();
+                    const type = $(detail).find('.type').text().trim();
+                    const power = $(detail).find('.power').text().trim();
+                    
+                    if (operator) chargingInfo.operators.push(operator);
+                    if (type) chargingInfo.types.push(type);
+                });
+
+                // 泊車位信息
+                const parkingSpaces = $(elem).find('.parking-spaces').text().trim();
+
+                // 添加到結果列表
+                chargers.push({
+                    name: location,
+                    address: address,
+                    district: district,
+                    latitude: latitude,
+                    longitude: longitude,
+                    parking_spaces: parkingSpaces || '未提供',
+                    charging: {
+                        count: chargingInfo.count || '0',
+                        operators: [...new Set(chargingInfo.operators)],
+                        types: [...new Set(chargingInfo.types)]
+                    }
+                });
+            } catch (error) {
+                console.error('解析錯誤：', error);
+            }
+        });
+
+        return chargers;
     } catch (error) {
-        console.error('Error fetching data:', error);
-        res.status(500).json({ error: '無法獲取數據' });
+        console.error('爬取錯誤：', error);
+        throw error;
+    }
+}
+
+// API 端點
+app.get('/api/chargers', async (req, res) => {
+    try {
+        const chargers = await scrapeKilowattData();
+        res.json({
+            lastUpdated: new Date().toISOString(),
+            total: chargers.length,
+            chargers: chargers
+        });
+    } catch (error) {
+        res.status(500).json({ error: '無法獲取充電站數據' });
     }
 });
+
+// 定時更新數據（每6小時）
+setInterval(async () => {
+    try {
+        await scrapeCarparks();
+        console.log('數據已更新');
+    } catch (error) {
+        console.error('定時更新錯誤：', error);
+    }
+}, 6 * 60 * 60 * 1000);
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
@@ -438,5 +516,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`服務器運行在端口 ${PORT}`);
+    // 首次運行時爬取數據
+    scrapeCarparks().catch(console.error);
 }); 

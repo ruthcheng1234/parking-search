@@ -2,563 +2,53 @@
 <html lang="zh-Hant">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>停車場搜尋系統</title>
+    <title>停車場搜尋</title>
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: Arial, "Microsoft JhengHei", sans-serif;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .container {
-            background-color: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-        }
-        input[type="text"] {
-            width: 300px;
-            padding: 8px;
-            font-size: 16px;
-        }
-        button {
-            padding: 8px 16px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .table-container {
-            margin-top: 20px;
-            overflow-x: auto;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            background: white;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }
-        th {
-            background-color: #4CAF50;
-            color: white;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .export-btn {
-            margin-top: 10px;
-            padding: 8px 16px;
-            background-color: #2196F3;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
+        body { margin: 20px; font-family: Arial, sans-serif; }
+        input { width: 250px; padding: 5px; }
+        button { padding: 5px 10px; margin: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #4CAF50; color: white; }
+        .export-btn { background: #2196F3; color: white; border: none; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>停車場搜尋系統</h1>
-        <div class="search-controls">
-            <input type="text" id="coordinates" placeholder="輸入經緯度（例如：22.29, 114.17）">
-            <button onclick="searchNearby()">搜尋</button>
-        </div>
-        <div id="results"></div>
-    </div>
+    <input type="text" id="coordinates" placeholder="輸入經緯度（例如：22.29, 114.17）">
+    <button onclick="searchNearby()">搜尋</button>
+    <div id="results"></div>
 
     <script>
-        // 內置停車場數據
-        const parkingData = {
-            "carparks": [
-                // 新界區域
-                {
-                    "name": "沙田新城市廣場停車場",
-                    "address": "沙田沙田正街18號",
-                    "spaces": 2000,
-                    "latitude": 22.3814,
-                    "longitude": 114.1891,
-                    "fee": "每小時$18",
-                    "charging": {
-                        "count": 12,
-                        "type": "Tesla, Type 2, CCS"
-                    },
-                    "district": "nt-east"
-                },
-                {
-                    "name": "大埔超級城停車場",
-                    "address": "大埔安邦路8號",
-                    "spaces": 900,
-                    "latitude": 22.4501,
-                    "longitude": 114.1698,
-                    "fee": "每小時$15",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2"
-                    },
-                    "district": "nt-east"
-                },
-                {
-                    "name": "荃灣廣場停車場",
-                    "address": "荃灣大河道30號",
-                    "spaces": 1100,
-                    "latitude": 22.3714,
-                    "longitude": 114.1136,
-                    "fee": "每小時$16",
-                    "charging": {
-                        "count": 8,
-                        "type": "Type 2, CCS"
-                    },
-                    "district": "nt-west"
-                },
-                {
-                    "name": "元朗廣場停車場",
-                    "address": "元朗青山公路249-251號",
-                    "spaces": 800,
-                    "latitude": 22.4425,
-                    "longitude": 114.0352,
-                    "fee": "每小時$15",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    },
-                    "district": "nt-west"
-                },
-                // 新界
-                {
-                    "name": "大埔超級城停車場",
-                    "address": "大埔安邦路8號",
-                    "spaces": 1000,
-                    "latitude": 22.4527,
-                    "longitude": 114.1712,
-                    "fee": "每小時$16",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    },
-                    "district": "nt-north"
-                },
-                {
-                    "name": "沙田新城市廣場停車場",
-                    "address": "沙田沙田正街18號",
-                    "spaces": 2500,
-                    "latitude": 22.3814,
-                    "longitude": 114.1891,
-                    "fee": "每小時$24",
-                    "charging": {
-                        "count": 12,
-                        "type": "Tesla, Type 2, CCS"
-                    },
-                    "district": "nt-east"
-                },
-                // 九龍
-                {
-                    "name": "又一城停車場",
-                    "address": "九龍塘達之路80號",
-                    "spaces": 1800,
-                    "latitude": 22.3372,
-                    "longitude": 114.1745,
-                    "fee": "每小時$28",
-                    "charging": {
-                        "count": 8,
-                        "type": "Type 2, CCS"
-                    },
-                    "district": "kl-west"
-                },
-                {
-                    "name": "MegaBox停車場",
-                    "address": "九龍灣宏照道38號",
-                    "spaces": 1600,
-                    "latitude": 22.3195,
-                    "longitude": 114.2079,
-                    "fee": "每小時$22",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2"
-                    },
-                    "district": "kl-east"
-                },
-                // 香港島
-                {
-                    "name": "太古城中心停車場",
-                    "address": "太古城道18號",
-                    "spaces": 1800,
-                    "latitude": 22.2867,
-                    "longitude": 114.2180,
-                    "fee": "每小時$26",
-                    "charging": {
-                        "count": 10,
-                        "type": "Tesla, Type 2"
-                    },
-                    "district": "hk-east"
-                },
-                {
-                    "name": "IFC停車場",
-                    "address": "中環金融街8號",
-                    "spaces": 2000,
-                    "latitude": 22.2849,
-                    "longitude": 114.1577,
-                    "fee": "每小時$35",
-                    "charging": {
-                        "count": 15,
-                        "type": "Tesla, Type 2, CCS"
-                    },
-                    "district": "hk-central"
-                },
-                // 保留現有的停車場數據...
-                {
-                    "name": "奧海城停車場",
-                    "address": "大角咀海庭道2號",
-                    "spaces": 1200,
-                    "latitude": 22.5018,
-                    "longitude": 114.1439,
-                    "fee": "每小時$22",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2, CCS"
-                    }
-                },
-                // ... 其他現有數據 ...
-                
-                // 新界區域
-                {
-                    "name": "屯門市廣場停車場",
-                    "address": "屯門屯門鄉事會路3號",
-                    "spaces": 1200,
-                    "latitude": 22.3912,
-                    "longitude": 113.9767,
-                    "fee": "每小時$16",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2, CCS"
-                    }
-                },
-                // 新界區域
-                {
-                    "name": "黃埔新天地停車場",
-                    "address": "紅磡德豐街20號",
-                    "spaces": 1500,
-                    "latitude": 22.3047,
-                    "longitude": 114.1904,
-                    "fee": "每小時$24",
-                    "charging": {
-                        "count": 8,
-                        "type": "Tesla, Type 2"
-                    }
-                },
-                {
-                    "name": "德福廣場停車場",
-                    "address": "九龍灣偉業街33號",
-                    "spaces": 1300,
-                    "latitude": 22.3235,
-                    "longitude": 114.2131,
-                    "fee": "每小時$20",
-                    "charging": {
-                        "count": 5,
-                        "type": "Type 2"
-                    }
-                },
-                // 新界北區
-                {
-                    "name": "上水廣場停車場",
-                    "address": "上水龍琛路39號",
-                    "spaces": 600,
-                    "latitude": 22.5012,
-                    "longitude": 114.1287,
-                    "fee": "每小時$15",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    }
-                },
-                {
-                    "name": "粉嶺名都停車場",
-                    "address": "粉嶺百和路88號",
-                    "spaces": 400,
-                    "latitude": 22.4897,
-                    "longitude": 114.1419,
-                    "fee": "每小時$14",
-                    "charging": {
-                        "count": 2,
-                        "type": "Type 2"
-                    }
-                },
-                // 新界西
-                {
-                    "name": "青衣城停車場",
-                    "address": "青衣青敬路33號",
-                    "spaces": 900,
-                    "latitude": 22.4094,
-                    "longitude": 114.1094,
-                    "fee": "每小時$16",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2, CCS"
-                    }
-                },
-                {
-                    "name": "荃灣廣場停車場",
-                    "address": "荃灣大河道72號",
-                    "spaces": 700,
-                    "latitude": 22.3714,
-                    "longitude": 114.1171,
-                    "fee": "每小時$20",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    }
-                },
-                // 新界東
-                {
-                    "name": "新港城中心停車場",
-                    "address": "馬鞍山鞍誠街18號",
-                    "spaces": 1100,
-                    "latitude": 22.4242,
-                    "longitude": 114.2314,
-                    "fee": "每小時$18",
-                    "charging": {
-                        "count": 8,
-                        "type": "Tesla, Type 2"
-                    }
-                },
-                {
-                    "name": "將軍澳中心停車場",
-                    "address": "將軍澳唐德街9號",
-                    "spaces": 800,
-                    "latitude": 22.3075,
-                    "longitude": 114.2634,
-                    "fee": "每小時$20",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2"
-                    }
-                },
-                // 九龍東
-                {
-                    "name": "淘大商場停車場",
-                    "address": "牛頭角牛頭角道77號", 
-                    "spaces": 500,
-                    "latitude": 22.3247,
-                    "longitude": 114.2159,
-                    "fee": "每小時$22",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    }
-                },
-                {
-                    "name": "觀塘廣場停車場",
-                    "address": "觀塘開源道68號",
-                    "spaces": 600,
-                    "latitude": 22.3112,
-                    "longitude": 114.2255,
-                    "fee": "每小時$24",
-                    "charging": {
-                        "count": 6,
-                        "type": "Type 2, CCS"
-                    }
-                },
-                // 九龍西 (共2個停車場)
-                {
-                    "name": "荔枝角廣場停車場",
-                    "address": "荔枝角長沙灣道833號",
-                    "spaces": 450,
-                    "latitude": 22.3367,
-                    "longitude": 114.1472,
-                    "fee": "每小時$20",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    }
-                },
-                {
-                    "name": "旺角中心停車場",
-                    "address": "旺角彌敦道688號",
-                    "spaces": 300,
-                    "latitude": 22.3187,
-                    "longitude": 114.1694,
-                    "fee": "每小時$28",
-                    "charging": {
-                        "count": 6,
-                        "type": "Tesla, Type 2"
-                    }
-                },
-                // 香港島東
-                {
-                    "name": "杏花新城停車場",
-                    "address": "筲箕灣杏花邨",
-                    "spaces": 700,
-                    "latitude": 22.2764,
-                    "longitude": 114.2393,
-                    "fee": "每小時$22",
-                    "charging": {
-                        "count": 8,
-                        "type": "Type 2, CCS"
-                    }
-                },
-                {
-                    "name": "康怡廣場停車場", 
-                    "address": "鰂魚涌康山道1號",
-                    "spaces": 500,
-                    "latitude": 22.2843,
-                    "longitude": 114.2147,
-                    "fee": "每小時$24",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    }
-                },
-                // 香港島中西區 (共6個停車場)
-                // - 中環國際金融中心停車場: 1200個車位, 每小時$35, 12個充電位 (Tesla/Type 2/CCS)
-                // - 中環交易廣場停車場: 800個車位, 每小時$32, 8個充電位 (Type 2/CCS)
-                // - 中環娛樂行停車場: 400個車位, 每小時$30, 4個充電位 (Type 2)
-                // - 上環文咸東街停車場: 300個車位, 每小時$28, 3個充電位 (Type 2)
-                // - 上環信德中心停車場: 800個車位, 每小時$32, 10個充電位 (Tesla/Type 2/CCS)
-                // - 西環卑路乍街停車場: 200個車位, 每小時$20, 2個充電位 (Type 2)
-                {
-                    "name": "中環國際金融中心停車場",
-                    "address": "中環港景街1號",
-                    "spaces": 1200,
-                    "latitude": 22.2849,
-                    "longitude": 114.1577,
-                    "fee": "每小時$35",
-                    "charging": {
-                        "count": 12,
-                        "type": "Tesla, Type 2, CCS"
-                    }
-                },
-                {
-                    "name": "中環交易廣場停車場", 
-                    "address": "中環康樂廣場8號",
-                    "spaces": 800,
-                    "latitude": 22.2837,
-                    "longitude": 114.1566,
-                    "fee": "每小時$32",
-                    "charging": {
-                        "count": 8,
-                        "type": "Type 2, CCS"
-                    }
-                },
-                {
-                    "name": "中環娛樂行停車場",
-                    "address": "中環皇后大道中30號",
-                    "spaces": 400,
-                    "latitude": 22.2823,
-                    "longitude": 114.1545,
-                    "fee": "每小時$30",
-                    "charging": {
-                        "count": 4,
-                        "type": "Type 2"
-                    }
-                },
-                {
-                    "name": "上環文咸東街停車場",
-                    "address": "上環文咸東街128號",
-                    "spaces": 300,
-                    "latitude": 22.2861,
-                    "longitude": 114.1512,
-                    "fee": "每小時$28",
-                    "charging": {
-                        "count": 3,
-                        "type": "Type 2"
-                    }
-                },
-                {
-                    "name": "西營盤西區電氣大樓停車場",
-                    "address": "西營盤德輔道西364號",
-                    "spaces": 250,
-                    "latitude": 22.2871,
-                    "longitude": 114.1421,
-                    "fee": "每小時$25",
-                    "charging": {
-                        "count": 2,
-                        "type": "Type 2"
-                    }
-                },
-                {
-                    "name": "上環信德中心停車場",
-                    "address": "上環干諾道中168號",
-                    "spaces": 800,
-                    "latitude": 22.2875,
-                    "longitude": 114.1521,
-                    "fee": "每小時$32",
-                    "charging": {
-                        "count": 10,
-                        "type": "Tesla, Type 2, CCS"
-                    }
-                },
-                {
-                    "name": "西環卑路乍街停車場",
-                    "address": "西環卑路乍街8號",
-                    "spaces": 200,
-                    "latitude": 22.2821,
-                    "longitude": 114.1283,
-                    "fee": "每小時$20",
-                    "charging": {
-                        "count": 2,
-                        "type": "Type 2"
-                    }
-                }
-            ]
-        };
-
-        // 計算距離函數
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        // 搜尋函數
-        function searchNearby() {
+        async function searchNearby() {
             const coords = document.getElementById('coordinates').value;
-            if (!coords) {
-                alert('請輸入經緯度！');
-                return;
-            }
+            if (!coords) return alert('請輸入經緯度！');
 
             const [lat, lng] = coords.split(',').map(x => parseFloat(x.trim()));
-            if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
-                alert('請輸入有效的經緯度！');
-                return;
-            }
+            if (!lat || !lng) return alert('請輸入有效的經緯度！');
 
             try {
-                let nearbyCarparks = parkingData.carparks.map(cp => ({
-                    name: cp.name,
-                    address: cp.address,
-                    latitude: cp.latitude,
-                    longitude: cp.longitude,
-                    spaces: cp.spaces || '未提供',
-                    fee: cp.fee || '未提供',
-                    charging: {
-                        count: cp.charging.count || 0,
-                        type: cp.charging.type || '未提供'
-                    }
-                }));
+                // 從 API 獲取數據
+                const response = await fetch('/api/chargers');
+                const chargers = await response.json();
 
-                // 計算距離並篩選 5 公里範圍
-                nearbyCarparks = nearbyCarparks.filter(cp => {
-                    const distance = calculateDistance(lat, lng, cp.latitude, cp.longitude);
-                    cp.distance = distance.toFixed(1);
-                    return distance <= 5;
-                });
+                // 處理數據
+                const nearbyCarparks = chargers
+                    .map(cp => ({
+                        name: cp.location_name,
+                        address: cp.address,
+                        distance: calculateDistance(lat, lng, cp.latitude, cp.longitude).toFixed(1),
+                        spaces: cp.parking_spaces || '未提供',
+                        charging: {
+                            count: cp.chargers?.length || 0,
+                            operators: [...new Set(cp.chargers?.map(c => c.operator_name) || [])],
+                            types: [...new Set(cp.chargers?.map(c => c.connector_type) || [])]
+                        },
+                        nearby_buildings: cp.nearby_buildings || []
+                    }))
+                    .filter(cp => cp.distance <= 5)
+                    .sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
 
-                // 按距離排序
-                nearbyCarparks.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
-
-                // 顯示結果
                 displayResults(nearbyCarparks);
             } catch (error) {
                 console.error('搜尋錯誤：', error);
@@ -566,58 +56,49 @@
             }
         }
 
-        // 顯示結果函數
-        function displayResults(nearbyCarparks) {
-            const results = document.getElementById('results');
-            if (nearbyCarparks.length === 0) {
-                results.innerHTML = `
-                    <h2>搜尋結果</h2>
-                    <p>在選定範圍內未找到停車場</p>
-                `;
-                return;
-            }
-
-            results.innerHTML = `
-                <h2>搜尋結果</h2>
-                <p>找到 ${nearbyCarparks.length} 個停車場</p>
-                <button onclick="exportToExcel()" class="export-btn">導出為 Excel</button>
-                <div class="table-container">
-                    <table id="resultsTable">
-                        <thead>
-                            <tr>
-                                <th>停車場名稱</th>
-                                <th>距離</th>
-                                <th>地址</th>
-                                <th>充電設施</th>
-                                <th>充電類型</th>
-                                <th>泊車位</th>
-                                <th>收費</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${nearbyCarparks.map(cp => `
-                                <tr>
-                                    <td>${cp.name}</td>
-                                    <td>${cp.distance} 公里</td>
-                                    <td>${cp.address}</td>
-                                    <td>${cp.charging.count}個</td>
-                                    <td>${cp.charging.type}</td>
-                                    <td>${cp.spaces !== '未提供' ? cp.spaces + '個' : '未提供'}</td>
-                                    <td>${cp.fee !== '未提供' ? cp.fee : '未提供'}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
+        function displayResults(carparks) {
+            document.getElementById('results').innerHTML = carparks.length ? `
+                <button onclick="exportToExcel()" class="export-btn">導出Excel</button>
+                <table id="resultsTable">
+                    <tr>
+                        <th>停車場</th>
+                        <th>距離</th>
+                        <th>地址</th>
+                        <th>泊車位</th>
+                        <th>充電設施</th>
+                        <th>充電服務商</th>
+                        <th>充電制式</th>
+                        <th>附近建築物</th>
+                    </tr>
+                    ${carparks.map(cp => `
+                        <tr>
+                            <td>${cp.name}</td>
+                            <td>${cp.distance}公里</td>
+                            <td>${cp.address}</td>
+                            <td>${cp.spaces}</td>
+                            <td>${cp.charging.count}個</td>
+                            <td>${cp.charging.operators.join(', ') || '未提供'}</td>
+                            <td>${cp.charging.types.join(', ') || '未提供'}</td>
+                            <td>${cp.nearby_buildings.map(b => b.name).join(', ') || '未提供'}</td>
+                        </tr>
+                    `).join('')}
+                </table>
+            ` : '<p>未找到停車場</p>';
         }
 
-        // Excel 導出函數
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        }
+
         function exportToExcel() {
-            const table = document.getElementById('resultsTable');
-            const ws = XLSX.utils.table_to_sheet(table);
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "停車場搜尋結果");
+            XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(document.getElementById('resultsTable')));
             XLSX.writeFile(wb, `停車場搜尋結果_${new Date().toLocaleDateString()}.xlsx`);
         }
     </script>

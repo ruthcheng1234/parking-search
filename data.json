@@ -24,5 +24,199 @@
                 "type": "Type 2"
             }
         }
+    ],
+    "chargers": [
+        {
+            "location_name": "IFC商場",
+            "address": "中環金融街8號",
+            "district": "中西區",
+            "latitude": 22.2849,
+            "longitude": 114.1577,
+            "parking_spaces": 1200,
+            "chargers": [
+                {"operator_name": "Tesla", "connector_type": "Tesla Supercharger"},
+                {"operator_name": "Shell Recharge", "connector_type": "CCS"},
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "交易廣場",
+            "address": "中環康樂廣場8號",
+            "district": "中西區",
+            "latitude": 22.2837,
+            "longitude": 114.1566,
+            "parking_spaces": 800,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "利園一期",
+            "address": "灣仔告士打道56號",
+            "district": "灣仔區",
+            "latitude": 22.2799,
+            "longitude": 114.1714,
+            "parking_spaces": 500,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "太古城中心",
+            "address": "太古城道18號",
+            "district": "東區",
+            "latitude": 22.2867,
+            "longitude": 114.2180,
+            "parking_spaces": 800,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "赤柱廣場",
+            "address": "赤柱廣場大街23號",
+            "district": "南區",
+            "latitude": 22.2193,
+            "longitude": 114.2131,
+            "parking_spaces": 400,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "深水埗運動場",
+            "address": "深水埗南昌街1號",
+            "district": "深水埗區",
+            "latitude": 22.3273,
+            "longitude": 114.1617,
+            "parking_spaces": 300,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "海港城",
+            "address": "尖沙咀廣東道3-27號",
+            "district": "油尖旺區",
+            "latitude": 22.2950,
+            "longitude": 114.1668,
+            "parking_spaces": 2000,
+            "chargers": [
+                {"operator_name": "Tesla", "connector_type": "Tesla Supercharger"}
+            ]
+        },
+        {
+            "location_name": "黃埔新天地",
+            "address": "紅磡德康街18號",
+            "district": "九龍城區",
+            "latitude": 22.3054,
+            "longitude": 114.1890,
+            "parking_spaces": 1200,
+            "chargers": [
+                {"operator_name": "Tesla", "connector_type": "Tesla Supercharger"}
+            ]
+        },
+        {
+            "location_name": "新蒲崗廣場",
+            "address": "新蒲崗太子道東638號",
+            "district": "黃大仙區",
+            "latitude": 22.3354,
+            "longitude": 114.1965,
+            "parking_spaces": 600,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "APM",
+            "address": "觀塘道418號",
+            "district": "觀塘區",
+            "latitude": 22.3121,
+            "longitude": 114.2251,
+            "parking_spaces": 600,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "CCS"}
+            ]
+        },
+        {
+            "location_name": "新城市廣場",
+            "address": "沙田正街18號",
+            "district": "沙田區",
+            "latitude": 22.3814,
+            "longitude": 114.1891,
+            "parking_spaces": 2000,
+            "chargers": [
+                {"operator_name": "Tesla", "connector_type": "Tesla Supercharger"},
+                {"operator_name": "CLP", "connector_type": "CCS"}
+            ]
+        },
+        {
+            "location_name": "大埔超級城",
+            "address": "大埔安邦路8號",
+            "district": "大埔區",
+            "latitude": 22.4501,
+            "longitude": 114.1698,
+            "parking_spaces": 900,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "上水廣場",
+            "address": "上水龍琛路39號",
+            "district": "北區",
+            "latitude": 22.5012,
+            "longitude": 114.1274,
+            "parking_spaces": 500,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "YOHO MALL",
+            "address": "元朗朗日路9號",
+            "district": "元朗區",
+            "latitude": 22.4462,
+            "longitude": 114.0350,
+            "parking_spaces": 1000,
+            "chargers": [
+                {"operator_name": "Tesla", "connector_type": "Tesla Supercharger"},
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "屯門市廣場",
+            "address": "屯門屯門鄉事會路1號",
+            "district": "屯門區",
+            "latitude": 22.3926,
+            "longitude": 113.9740,
+            "parking_spaces": 1500,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "青衣城",
+            "address": "青衣青敬路33號",
+            "district": "葵青區",
+            "latitude": 22.3594,
+            "longitude": 114.1094,
+            "parking_spaces": 1000,
+            "chargers": [
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        },
+        {
+            "location_name": "東薈城",
+            "address": "大嶼山東涌達東路20號",
+            "district": "離島區",
+            "latitude": 22.2894,
+            "longitude": 113.9413,
+            "parking_spaces": 1100,
+            "chargers": [
+                {"operator_name": "Tesla", "connector_type": "Tesla Supercharger"},
+                {"operator_name": "CLP", "connector_type": "Type 2"}
+            ]
+        }
     ]
 } 
