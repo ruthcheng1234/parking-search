@@ -32,6 +32,13 @@
         #results {
             margin-top: 20px;
         }
+        .carpark-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
     </style>
 </head>
 <body>
@@ -45,32 +52,100 @@
     </div>
 
     <script>
+        // 內置停車場數據
+        const parkingData = {
+            "carparks": [
+                {
+                    "name": "海港城停車場",
+                    "address": "尖沙咀廣東道3-27號",
+                    "spaces": 2000,
+                    "latitude": 22.2950,
+                    "longitude": 114.1668,
+                    "fee": "每小時$28",
+                    "charging": {
+                        "count": 10,
+                        "type": "Tesla, Type 2"
+                    }
+                },
+                {
+                    "name": "圓方停車場",
+                    "address": "柯士甸道西1號",
+                    "spaces": 800,
+                    "latitude": 22.3047,
+                    "longitude": 114.1615,
+                    "fee": "每小時$32",
+                    "charging": {
+                        "count": 5,
+                        "type": "Type 2"
+                    }
+                },
+                {
+                    "name": "時代廣場停車場",
+                    "address": "銅鑼灣勿地臣街1號",
+                    "spaces": 1500,
+                    "latitude": 22.2782,
+                    "longitude": 114.1829,
+                    "fee": "每小時$30",
+                    "charging": {
+                        "count": 8,
+                        "type": "Type 2, CCS"
+                    }
+                }
+            ]
+        };
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // 地球半徑（公里）
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
         async function searchNearby() {
             const coords = document.getElementById('coordinates').value;
-            const [lat, lng] = coords.split(',').map(x => x.trim());
+            const [lat, lng] = coords.split(',').map(x => parseFloat(x.trim()));
+
+            if (!lat || !lng || isNaN(lat) || isNaN(lng)) {
+                alert('請輸入有效的經緯度！');
+                return;
+            }
 
             try {
-                // 使用預設的停車場數據
-                const response = await fetch('https://api.example.com/carparks');
-                const carparks = await response.json();
+                // 篩選5公里範圍內的停車場
+                const nearbyCarparks = parkingData.carparks.filter(cp => {
+                    const distance = calculateDistance(lat, lng, cp.latitude, cp.longitude);
+                    cp.distance = distance.toFixed(1); // 保存距離信息
+                    return distance <= 5;
+                });
+
+                // 按距離排序
+                nearbyCarparks.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
                 
                 // 顯示結果
                 const results = document.getElementById('results');
                 results.innerHTML = `
                     <h2>搜尋結果</h2>
-                    <p>找到 ${carparks.length} 個停車場</p>
-                    <ul>
-                        ${carparks.map(cp => `
-                            <li>
-                                ${cp.name}<br>
-                                地址：${cp.address}<br>
-                                車位：${cp.spaces}個
-                            </li>
+                    <p>找到 ${nearbyCarparks.length} 個停車場</p>
+                    <div>
+                        ${nearbyCarparks.map(cp => `
+                            <div class="carpark-item">
+                                <h3>${cp.name}</h3>
+                                <p>距離：${cp.distance} 公里</p>
+                                <p>地址：${cp.address}</p>
+                                <p>車位：${cp.spaces}個</p>
+                                <p>收費：${cp.fee}</p>
+                                <p>充電設施：${cp.charging.count}個 (${cp.charging.type})</p>
+                            </div>
                         `).join('')}
-                    </ul>
+                    </div>
                 `;
             } catch (error) {
                 alert('搜尋時發生錯誤，請稍後再試');
+                console.error(error);
             }
         }
     </script>
