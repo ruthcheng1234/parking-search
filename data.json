@@ -1,0 +1,28 @@
+{
+    "carparks": [
+        {
+            "name": "海港城停車場",
+            "address": "尖沙咀廣東道3-27號",
+            "spaces": 2000,
+            "latitude": 22.2950,
+            "longitude": 114.1668,
+            "fee": "每小時$28",
+            "charging": {
+                "count": 10,
+                "type": "Tesla, Type 2"
+            }
+        },
+        {
+            "name": "圓方停車場",
+            "address": "柯士甸道西1號",
+            "spaces": 800,
+            "latitude": 22.3047,
+            "longitude": 114.1615,
+            "fee": "每小時$32",
+            "charging": {
+                "count": 5,
+                "type": "Type 2"
+            }
+        }
+    ]
+} 
